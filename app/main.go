@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"net"
-	"os"
+  "os"
+  "io"
+  "bytes"
 )
 
 var _ = net.Listen
@@ -25,5 +27,29 @@ func main() {
 	}
   defer conn.Close()
 
-  conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+  buf := make([]byte, 1024)
+  for {
+    n, err := conn.Read(buf)
+    if err != nil {
+      if err != io.EOF {
+        fmt.Println("Read error:", err)
+      }
+      break
+    }
+
+    data := buf[:n]
+    requestLine := bytes.Split(data, []byte("\r\n"))[0]
+    path := bytes.Split(requestLine, []byte(" "))[1]
+    
+    
+    fmt.Println(string(path))
+    if (string(path) == "/" || string(path) == "") {
+      conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+      return
+    }
+
+    conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+    break
+  }
 }
+
