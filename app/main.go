@@ -39,14 +39,21 @@ func main() {
 
     data := buf[:n]
     requestLine := bytes.Split(data, []byte("\r\n"))[0]
-    path := bytes.Split(requestLine, []byte(" "))[1]
+    path := bytes.TrimPrefix(bytes.Split(requestLine, []byte(" "))[1], []byte("/"))
     
     
     fmt.Println(string(path))
-    if (string(path) == "/" || string(path) == "") {
+    if (string(path) == "") {
       conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
       return
     }
+
+    if (bytes.HasPrefix(path, []byte("echo"))) {
+      echoStr := bytes.Split(path, []byte("/"))[1]
+      conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(echoStr), echoStr)))
+      return
+    }
+    
 
     conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
     break
