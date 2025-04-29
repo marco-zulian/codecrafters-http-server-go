@@ -36,44 +36,44 @@ func (s *Server) Serve() error {
 		os.Exit(1)
 	}
 
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
-	}
-	defer conn.Close()
-
-	buf := make([]byte, 1024)
-
 	for {
-		n, err := conn.Read(buf)
+		conn, err := l.Accept()
 		if err != nil {
-			if err != io.EOF {
-				fmt.Println("Read error:", err)
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
+
+		go func(conn net.Conn) {
+			defer conn.Close()
+
+			buf := make([]byte, 1024)
+			n, err := conn.Read(buf)
+
+			if err != nil {
+				if err != io.EOF {
+					fmt.Println("Read error:", err)
+				}
+				return
 			}
-			break
-		}
 
-		data := buf[:n]
-		request, err := NewRequest(data)
-		if err != nil {
-			return err
-		}
-
-		var response *Response
-		for route, handler := range s.Handler {
-			re := regexp.MustCompile(route)
-
-			if re.Match([]byte(request.Path)) {
-				response = handler(request)
-				conn.Write([]byte(response.Content(request.HTTPVersion)))
-				return nil
+			data := buf[:n]
+			request, err := NewRequest(data)
+			if err != nil {
+				conn.Write([]byte("HTTP/1.1 500 Internal Server Error\r\n\r\n"))
 			}
-		}
 
-		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
-		break
+			var response *Response
+			for route, handler := range s.Handler {
+				re := regexp.MustCompile(route)
+
+				if re.Match([]byte(request.Path)) {
+					response = handler(request)
+					conn.Write([]byte(response.Content(request.HTTPVersion)))
+					return
+				}
+			}
+
+			conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+		}(conn)
 	}
-
-	return nil
 }
