@@ -102,6 +102,12 @@ func (r *Response) AddHeader(header string, value string) {
 	r.Headers[normalizedHeader] = append(r.Headers[normalizedHeader], value)
 }
 
+func (r *Response) SetHeader(header string, value string) {
+	normalizedHeader := strings.ToLower(strings.TrimSpace(header))
+
+	r.Headers[normalizedHeader] = []string{value}
+}
+
 func (r *Response) SetBody(body string) {
 	r.Body = body
 }
