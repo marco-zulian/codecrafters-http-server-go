@@ -12,10 +12,12 @@ var _ = net.Listen
 var _ = os.Exit
 
 type RequestHandler func(*Request) *Response
+type Middleware func(RequestHandler) RequestHandler
 
 type Server struct {
-	Addr    int
-	Handler map[string]map[string]RequestHandler
+	Addr        int
+	Handler     map[string]map[string]RequestHandler
+	Middlewares []Middleware
 }
 
 func NewServer(port int) *Server {
@@ -36,6 +38,18 @@ func (s *Server) Get(path string, handler RequestHandler) {
 
 func (s *Server) Post(path string, handler RequestHandler) {
 	s.Handler["POST"][path] = handler
+}
+
+func (s *Server) Use(middleware Middleware) {
+	s.Middlewares = append(s.Middlewares, middleware)
+}
+
+func chainMiddlewares(h RequestHandler, middlewares ...Middleware) RequestHandler {
+	for _, middleware := range middlewares {
+		h = middleware(h)
+	}
+
+	return h
 }
 
 func (s *Server) Serve() error {
@@ -76,7 +90,8 @@ func (s *Server) Serve() error {
 				re := regexp.MustCompile(route)
 
 				if re.Match([]byte(request.Path)) {
-					response = handler(request)
+					finalHandler := chainMiddlewares(handler, s.Middlewares...)
+					response = finalHandler(request)
 					conn.Write([]byte(response.Content(request.HTTPVersion)))
 					return
 				}

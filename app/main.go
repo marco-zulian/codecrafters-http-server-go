@@ -21,6 +21,8 @@ func main() {
 	server.Get("^/files", FilesGetPathHandler)
 	server.Post("^/files/.+", FilesPostPathHandler)
 
+	server.Use(EncodingMiddleware)
+
 	server.Serve()
 }
 
