@@ -15,10 +15,11 @@ func main() {
 	flag.Parse()
 
 	server := NewServer(4221)
-	server.AddHandler("^/$", EmptyPathHandler)
-	server.AddHandler("^/echo", EchoPathHandler)
-	server.AddHandler("^/user-agent", UserAgentHandler)
-	server.AddHandler("^/files", FilesPathHandler)
+	server.Get("^/$", EmptyPathHandler)
+	server.Get("^/echo", EchoPathHandler)
+	server.Get("^/user-agent", UserAgentHandler)
+	server.Get("^/files", FilesGetPathHandler)
+	server.Post("^/files/.+", FilesPostPathHandler)
 
 	server.Serve()
 }
@@ -56,7 +57,7 @@ func UserAgentHandler(request *Request) *Response {
 	return response
 }
 
-func FilesPathHandler(request *Request) *Response {
+func FilesGetPathHandler(request *Request) *Response {
 	response := NewResponse()
 
 	filePathParts := strings.SplitN(request.Path, "/", 3)
@@ -77,5 +78,27 @@ func FilesPathHandler(request *Request) *Response {
 	response.AddHeader("Content-Type", "application/octet-stream")
 	response.AddHeader("Content-Length", strconv.Itoa(len(data)))
 
+	return response
+}
+
+func FilesPostPathHandler(request *Request) *Response {
+	response := NewResponse()
+
+	filePathParts := strings.SplitN(request.Path, "/", 3)
+
+	f, err := os.Create(fmt.Sprintf("%s%s", *directory, filePathParts[2]))
+	if err != nil {
+		response.SetStatus(500)
+		return response
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(request.Body)
+	if err != nil {
+		response.SetStatus(500)
+		return response
+	}
+
+	response.SetStatus(201)
 	return response
 }

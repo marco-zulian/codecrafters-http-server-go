@@ -15,18 +15,27 @@ type RequestHandler func(*Request) *Response
 
 type Server struct {
 	Addr    int
-	Handler map[string]RequestHandler
+	Handler map[string]map[string]RequestHandler
 }
 
 func NewServer(port int) *Server {
 	return &Server{
-		Addr:    port,
-		Handler: make(map[string]RequestHandler),
+		Addr: port,
+		Handler: map[string]map[string]RequestHandler{
+			"GET":    {},
+			"POST":   {},
+			"PUT":    {},
+			"DELETE": {},
+		},
 	}
 }
 
-func (s *Server) AddHandler(path string, handler RequestHandler) {
-	s.Handler[path] = handler
+func (s *Server) Get(path string, handler RequestHandler) {
+	s.Handler["GET"][path] = handler
+}
+
+func (s *Server) Post(path string, handler RequestHandler) {
+	s.Handler["POST"][path] = handler
 }
 
 func (s *Server) Serve() error {
@@ -63,7 +72,7 @@ func (s *Server) Serve() error {
 			}
 
 			var response *Response
-			for route, handler := range s.Handler {
+			for route, handler := range s.Handler[request.Method] {
 				re := regexp.MustCompile(route)
 
 				if re.Match([]byte(request.Path)) {

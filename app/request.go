@@ -12,6 +12,8 @@ type Request struct {
 	HTTPVersion string
 
 	Headers map[string][]string
+
+	Body string
 }
 
 func NewRequest(content []byte) (*Request, error) {
@@ -19,6 +21,7 @@ func NewRequest(content []byte) (*Request, error) {
 
 	requestLine := requestParts[0]
 	requestHeaders := requestParts[1 : len(requestParts)-1]
+	requestBody := requestParts[len(requestParts)-1]
 
 	requestLineParts := bytes.Split(requestLine, []byte(" "))
 	if len(requestLineParts) != 3 {
@@ -35,6 +38,7 @@ func NewRequest(content []byte) (*Request, error) {
 		Path:        string(url),
 		HTTPVersion: string(version),
 		Headers:     headers,
+		Body:        string(requestBody),
 	}, nil
 }
 
