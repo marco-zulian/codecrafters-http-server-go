@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"strings"
 )
 
 type Request struct {
@@ -53,4 +54,11 @@ func parseHeaders(headersLines [][]byte) map[string][]string {
 	}
 
 	return headers
+}
+
+func (r *Request) GetHeader(header string) string {
+	normalizedHeader := strings.ToLower(strings.TrimSpace(header))
+
+	value := r.Headers[normalizedHeader]
+	return strings.Join(value, ", ")
 }

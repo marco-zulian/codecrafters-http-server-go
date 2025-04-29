@@ -12,6 +12,7 @@ func main() {
 	server := NewServer(4221)
 	server.AddHandler("^/$", EmptyPathHandler)
 	server.AddHandler("^/echo", EchoPathHandler)
+  server.AddHandler("^/user-agent", UserAgentHandler)
 
 	server.Serve()
 }
@@ -35,4 +36,16 @@ func EchoPathHandler(request *Request) *Response {
 	response.SetBody(echoStr)
 
 	return response
+}
+
+func UserAgentHandler(request *Request) *Response {
+  response := NewResponse()
+
+  userAgent := request.GetHeader("User-Agent")
+  
+  response.AddHeader("Content-Type", "text/plain")
+  response.AddHeader("Content-Length", strconv.Itoa(len(userAgent)))
+  response.SetBody(userAgent)
+
+  return response
 }
