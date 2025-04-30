@@ -17,7 +17,7 @@ func EncodingMiddleware(next RequestHandler) RequestHandler {
 			var buf bytes.Buffer
 			gw := gzip.NewWriter(&buf)
 
-			_, err := gw.Write([]byte(r.Body))
+			_, err := gw.Write([]byte(response.Body))
 			if err != nil {
 				return response
 			}
@@ -27,9 +27,9 @@ func EncodingMiddleware(next RequestHandler) RequestHandler {
 				return response
 			}
 
-			compressedBody := buf.String()
+			compressedBody := buf.Bytes()
 
-			response.SetBody(compressedBody)
+			response.SetBody(string(compressedBody))
 			response.SetHeader("Content-Length", strconv.Itoa(len(compressedBody)))
 			response.AddHeader("Content-Encoding", "gzip")
 		}
