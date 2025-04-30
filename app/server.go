@@ -69,35 +69,41 @@ func (s *Server) Serve() error {
 		go func(conn net.Conn) {
 			defer conn.Close()
 
-			buf := make([]byte, 1024)
-			n, err := conn.Read(buf)
+			for {
+				buf := make([]byte, 1024)
+				n, err := conn.Read(buf)
 
-			if err != nil {
-				if err != io.EOF {
-					fmt.Println("Read error:", err)
-				}
-				return
-			}
-
-			data := buf[:n]
-			request, err := NewRequest(data)
-			if err != nil {
-				conn.Write([]byte("HTTP/1.1 500 Internal Server Error\r\n\r\n"))
-			}
-
-			var response *Response
-			for route, handler := range s.Handler[request.Method] {
-				re := regexp.MustCompile(route)
-
-				if re.Match([]byte(request.Path)) {
-					finalHandler := chainMiddlewares(handler, s.Middlewares...)
-					response = finalHandler(request)
-					conn.Write([]byte(response.Content(request.HTTPVersion)))
+				if err != nil {
+					if err != io.EOF {
+						fmt.Println("Read error:", err)
+					}
 					return
 				}
-			}
 
-			conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+				data := buf[:n]
+				request, err := NewRequest(data)
+				if err != nil {
+					conn.Write([]byte("HTTP/1.1 500 Internal Server Error\r\n\r\n"))
+				}
+
+				var response *Response
+				for route, handler := range s.Handler[request.Method] {
+					re := regexp.MustCompile(route)
+
+					if re.Match([]byte(request.Path)) {
+						finalHandler := chainMiddlewares(handler, s.Middlewares...)
+						response = finalHandler(request)
+						conn.Write([]byte(response.Content(request.HTTPVersion)))
+						return
+					}
+				}
+
+				conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+
+				if request.GetHeader("Connection") == "Close" {
+					break
+				}
+			}
 		}(conn)
 	}
 }
