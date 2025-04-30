@@ -100,8 +100,8 @@ func (s *Server) Serve() error {
 
 				conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 
-				if request.GetHeader("Connection") == "Close" {
-					break
+				if request.GetHeader("Connection") == "close" {
+					return
 				}
 			}
 		}(conn)
