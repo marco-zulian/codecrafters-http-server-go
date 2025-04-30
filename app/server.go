@@ -87,6 +87,7 @@ func (s *Server) Serve() error {
 				}
 
 				var response *Response
+				matched := false
 				for route, handler := range s.Handler[request.Method] {
 					re := regexp.MustCompile(route)
 
@@ -94,11 +95,14 @@ func (s *Server) Serve() error {
 						finalHandler := chainMiddlewares(handler, s.Middlewares...)
 						response = finalHandler(request)
 						conn.Write([]byte(response.Content(request.HTTPVersion)))
-						return
+						matched = true
+						break
 					}
 				}
 
-				conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+				if !matched {
+					conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+				}
 
 				if request.GetHeader("Connection") == "close" {
 					return
